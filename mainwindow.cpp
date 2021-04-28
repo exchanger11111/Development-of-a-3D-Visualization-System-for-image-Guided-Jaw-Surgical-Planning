@@ -17,6 +17,7 @@
 #include "vtkImageData.h"
 #include "vtkImageMapToWindowLevelColors.h"
 #include "vtkImageSlabReslice.h"
+#include <vtkImageReslice.h>
 #include "vtkInteractorStyleImage.h"
 #include "vtkLookupTable.h"
 #include "vtkPlane.h"
@@ -36,6 +37,17 @@
 #include <vtkGenericOpenGLRenderWindow.h>
 #include <vtkRenderWindow.h>
 #include <vtkRenderer.h>
+#include <vtkDICOMReader.h>
+#include <vtkImageActor.h>
+#include <vtkDICOMDirectory.h>
+#include <vtkDICOMItem.h>
+#include <vtkStringArray.h>
+#include <vtkDICOMDictionary.h>
+#include <vtkDICOMCTRectifier.h>
+#include <vtkDICOMApplyRescale.h>
+#include<vtkImageShiftScale.h>
+#include <vtkImageSliceMapper.h>
+
 
 //This class is used for syncing four pane 
 class vtkResliceCursorCallback : public vtkCommand
@@ -66,8 +78,8 @@ public:
 
             if (ipw == this->IPW[0])
             {
-                this->IPW[1]->SetWindowLevel(wl[0], wl[1], 1);
                 this->IPW[2]->SetWindowLevel(wl[0], wl[1], 1);
+                this->IPW[1]->SetWindowLevel(wl[0], wl[1], 1);
             }
             else if (ipw == this->IPW[1])
             {
@@ -122,7 +134,7 @@ MainWindow::~MainWindow() { delete ui; }
 
 void MainWindow::AboutDialog()
 {
-    QMessageBox::information(this, "About","By Martijn Koopman.\nSource code available under Apache License 2.0.");
+    QMessageBox::information(this, "About","Modified By Gan Hui Wen.\nThis is an application for 3D Visualization System");
 }
 
 void MainWindow::Render()
@@ -132,19 +144,6 @@ void MainWindow::Render()
         riw[i]->Render();
     }
     ui->view3->renderWindow()->Render();
-    ui->view2->renderWindow()->Render();
-}
-
-void MainWindow::OpenVTK()
-{
-    QString fileVTK = QFileDialog::getOpenFileName(this, tr("Open file"), "", "VTK Files (*.vtk)");
-    
-    QFile file(fileVTK);
-    file.open(QIODevice::ReadOnly);
-    if (!file.exists())
-        return;
-
-    readVTK(fileVTK);
 }
 
 void MainWindow::OpenDICOM()
@@ -158,18 +157,114 @@ void MainWindow::OpenDICOM()
 
     readDICOM(folderDICOM);
 }
+void MainWindow::refresh()
+{
+    vtkSmartPointer<vtkImageShiftScale> shiftScaleFilter = vtkSmartPointer<vtkImageShiftScale>::New();
+    shiftScaleFilter->SetOutputScalarTypeToUnsignedChar();
+    
+    shiftScaleFilter->SetShift(0);
+    shiftScaleFilter->SetScale(0);
+    shiftScaleFilter->Update();
+
+    // Create actors
+    vtkSmartPointer<vtkImageSliceMapper> originalSliceMapper = vtkSmartPointer<vtkImageSliceMapper>::New();
+
+    vtkSmartPointer<vtkImageSlice> originalSlice = vtkSmartPointer<vtkImageSlice>::New();
+    originalSlice->SetMapper(originalSliceMapper);
+
+    vtkSmartPointer<vtkImageSliceMapper> shiftScaleMapper = vtkSmartPointer<vtkImageSliceMapper>::New();
+    shiftScaleMapper->SetInputConnection(shiftScaleFilter->GetOutputPort());
+
+    vtkSmartPointer<vtkImageSlice> shiftScaleSlice = vtkSmartPointer<vtkImageSlice>::New();
+    shiftScaleSlice->SetMapper(shiftScaleMapper);
+   // shiftScaleSlice->GetProperty()->SetInterpolationTypeToNearest();
+
+    //renderer->AddViewProp(originalSlice);
+
+    vtkSmartPointer<vtkRenderer> shiftScaleRenderer = vtkSmartPointer<vtkRenderer>::New();
+    shiftScaleRenderer->AddViewProp(shiftScaleSlice);
+
+    ui->view1->update();
+    ui->view2->update();
+    ui->view3->update();
+}
+int MainWindow::setValue(int v)
+{
+    if (v > 0)
+    {
+        
+    }
+    return 0;
+}
 
 void MainWindow::readDICOM(const QString& folderDICOM)
 {
-    vtkSmartPointer<vtkDICOMImageReader> reader = vtkSmartPointer<vtkDICOMImageReader>::New();
-    reader->SetDirectoryName(folderDICOM.toStdString().c_str());
+    //vtkSmartPointer<vtkDICOMImageReader> reader = vtkSmartPointer<vtkDICOMImageReader>::New();
+    //reader->SetDirectoryName(folderDICOM.toStdString().c_str());
+    //reader->Update();
+
+    vtkSmartPointer < vtkDICOMDirectory > dicomdir = vtkSmartPointer < vtkDICOMDirectory >::New();
+    dicomdir->SetDirectoryName(folderDICOM.toStdString().c_str());
+    dicomdir->RequirePixelDataOn();
+    dicomdir->Update();
+    int n = dicomdir->GetNumberOfSeries();
+
+    vtkSmartPointer <vtkDICOMReader> reader =  vtkSmartPointer <vtkDICOMReader>::New();
+
+    // Provide a multi-frame, multi-stack file
+    //reader->SetFileName(folderDICOM.toStdString().c_str());
+    // Read the meta data, get a list of stacks
+   // reader->UpdateInformation();
+    vtkStringArray* stackNames = reader->GetStackIDs();
+    // Specify a stack, here we assume we know the name:
+    reader->SetDesiredStackID("1");
+
+    
+    if (n > 0)
+    {
+        // read the first series found
+        reader->SetFileNames(dicomdir->GetFileNamesForSeries(0));
+        reader->Update();
+    }
+    else
+    {
+        //std::cerr << "No DICOM images in directory!" << std::endl;
+        QMessageBox::information(this, "About", " No DICOM images in directory!");
+        return;
+    }
+    
+    reader->SetMemoryRowOrderToFileNative();
     reader->Update();
+    // get the matrix to use when displaying the data
+    // (this matrix provides position and orientation)
+   // vtkMatrix4x4* matrix = reader->GetPatientMatrix();
+    
+    vtkNew<vtkDICOMCTRectifier> rectify;
+    rectify->SetVolumeMatrix(reader->GetPatientMatrix());
+    rectify->SetInputConnection(reader->GetOutputPort());
+    rectify->Update();
+
+    // get the new PatientMatrix for the rectified volume
+    vtkMatrix4x4* matrix = rectify->GetRectifiedMatrix();
+
+    vtkSmartPointer <vtkImageActor> actor = vtkSmartPointer <vtkImageActor>::New();
+    actor->GetMapper();
+         // SetInputConnection(reader->GetOutputPort());
+    actor->SetUserMatrix(matrix);
+
+
+   // Flip the order of dicom pic to become ascending order
+    vtkSmartPointer<vtkImageReslice> flip = vtkSmartPointer<vtkImageReslice>::New();
+    //flip->SetInputConnection(reader->GetOutputPort());
+    //flip->SetResliceAxesDirectionCosines(-1, 0, 0, 0, -1, 0, 0, 0, -1);
+    //flip->Update();
+
     int imageDims[3];
     reader->GetOutput()->GetDimensions(imageDims);
 
     for (int i = 0; i < 3; i++)
     {
-        riw[i] = vtkSmartPointer<vtkResliceImageViewer>::New();
+        riw[i] = vtkSmartPointer<vtkResliceImageViewer>::New();        
         vtkNew<vtkGenericOpenGLRenderWindow> renderWindow;
         riw[i]->SetRenderWindow(renderWindow);
     }
@@ -196,6 +291,18 @@ void MainWindow::readDICOM(const QString& folderDICOM)
         riw[i]->SetSliceOrientation(i);
         riw[i]->SetResliceModeToAxisAligned();
     }
+   }
+
+void MainWindow::OpenVTK()
+{
+    QString fileVTK = QFileDialog::getOpenFileName(this, tr("Open file"), "", "VTK Files (*.vtk)");
+    
+    QFile file(fileVTK);
+    file.open(QIODevice::ReadOnly);
+    if (!file.exists())
+        return;
+
+    readVTK(fileVTK);
 }
 
 void MainWindow::readVTK(const QString& fileVTK)
@@ -211,7 +318,8 @@ void MainWindow::readVTK(const QString& fileVTK)
 
     // Add data set to 3D view
     vtkSmartPointer<vtkDataSet> dataSet = reader->GetOutput();
-    if (dataSet != nullptr) {
+    if (dataSet != nullptr) 
+    {
         ui->sceneWidget->addDataSet(reader->GetOutput());
     }
 }
