@@ -6,94 +6,125 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>600</height>
+    <width>808</width>
+    <height>587</height>
    </rect>
   </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Fixed" vsizetype="Minimum">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
   <property name="windowTitle">
-   <string>Qt VTK Viewer</string>
+   <string>Viewer</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
+    <item row="0" column="2">
+     <widget class="QTextBrowser" name="textBrowser">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+     </widget>
+    </item>
     <item row="0" column="0">
-     <widget class="QLabel" name="label">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="font">
-       <font>
-        <pointsize>10</pointsize>
-        <weight>75</weight>
-        <bold>true</bold>
-       </font>
-      </property>
-      <property name="text">
-       <string>Sagittal plane</string>
-      </property>
-     </widget>
-    </item>
-    <item row="3" column="0">
-     <widget class="QVTKRenderWidget" name="view2" native="true"/>
-    </item>
-    <item row="2" column="0">
-     <widget class="QLabel" name="label_3">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="font">
-       <font>
-        <pointsize>10</pointsize>
-        <weight>75</weight>
-        <bold>true</bold>
-       </font>
-      </property>
-      <property name="text">
-       <string>Axial plane</string>
-      </property>
-     </widget>
-    </item>
-    <item row="1" column="1">
-     <widget class="SceneWidget" name="sceneWidget"/>
-    </item>
-    <item row="1" column="0">
-     <widget class="QVTKRenderWidget" name="view1" native="true"/>
-    </item>
-    <item row="2" column="1">
-     <widget class="QLabel" name="label_4">
-      <property name="font">
-       <font>
-        <pointsize>10</pointsize>
-        <weight>75</weight>
-        <bold>true</bold>
-       </font>
-      </property>
-      <property name="text">
-       <string>Coronal plane</string>
-      </property>
-     </widget>
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <layout class="QGridLayout" name="gridLayout_3">
+        <item row="3" column="0">
+         <widget class="SceneWidget" name="sceneWidget"/>
+        </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="label">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="font">
+           <font>
+            <pointsize>10</pointsize>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string>Sagittal plane</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_3">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="font">
+           <font>
+            <pointsize>10</pointsize>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string>3D Rendering</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="2">
+         <widget class="QLabel" name="label_4">
+          <property name="font">
+           <font>
+            <pointsize>10</pointsize>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string>Axial plane</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="2">
+         <widget class="QVTKRenderWidget" name="view3" native="true"/>
+        </item>
+        <item row="1" column="2">
+         <widget class="QVTKRenderWidget" name="view2" native="true"/>
+        </item>
+        <item row="1" column="0">
+         <widget class="QVTKRenderWidget" name="view1" native="true"/>
+        </item>
+        <item row="0" column="2">
+         <widget class="QLabel" name="label_2">
+          <property name="font">
+           <font>
+            <pointsize>10</pointsize>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string>Coronal plane</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
     </item>
     <item row="0" column="1">
-     <widget class="QLabel" name="label_2">
-      <property name="font">
-       <font>
-        <pointsize>10</pointsize>
-        <weight>75</weight>
-        <bold>true</bold>
-       </font>
-      </property>
-      <property name="text">
-       <string>VTK File</string>
+     <widget class="QScrollBar" name="verticalScrollBar">
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
       </property>
      </widget>
-    </item>
-    <item row="3" column="1">
-     <widget class="QVTKRenderWidget" name="view3" native="true"/>
     </item>
    </layout>
   </widget>
@@ -102,7 +133,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
+     <width>808</width>
      <height>26</height>
     </rect>
    </property>
@@ -111,7 +142,9 @@
      <string>File</string>
     </property>
     <addaction name="actionOpenFile"/>
-    <addaction name="actionOpen_folder"/>
+    <addaction name="actionOpenFolder"/>
+    <addaction name="actionRead_Meta_Data"/>
+    <addaction name="actionRefresh"/>
     <addaction name="separator"/>
     <addaction name="actionQuit"/>
    </widget>
@@ -135,9 +168,11 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="actionOpenFolder"/>
    <addaction name="actionOpenFile"/>
-   <addaction name="actionOpen_folder"/>
    <addaction name="actionZoomToExtent"/>
+   <addaction name="actionRefresh"/>
+   <addaction name="actionRead_Meta_Data"/>
    <addaction name="actionQuit"/>
   </widget>
   <action name="actionOpenFile">
@@ -149,7 +184,7 @@
     <string>Open VTK</string>
    </property>
    <property name="toolTip">
-    <string>Open file...</string>
+    <string>Open VTK...</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+O</string>
@@ -188,13 +223,31 @@
     <string>About</string>
    </property>
   </action>
-  <action name="actionOpen_folder">
+  <action name="actionOpenFolder">
    <property name="icon">
     <iconset resource="resources.qrc">
      <normaloff>:/icons/open_folder.png</normaloff>:/icons/open_folder.png</iconset>
    </property>
    <property name="text">
     <string>Open DICOM</string>
+   </property>
+  </action>
+  <action name="actionRefresh">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/icons/Refresh.png</normaloff>:/icons/Refresh.png</iconset>
+   </property>
+   <property name="text">
+    <string>Refresh</string>
+   </property>
+  </action>
+  <action name="actionRead_Meta_Data">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/icons/reading.png</normaloff>:/icons/reading.png</iconset>
+   </property>
+   <property name="text">
+    <string>Read Meta Data</string>
    </property>
   </action>
  </widget>
@@ -251,22 +304,6 @@
    </hints>
   </connection>
   <connection>
-   <sender>actionZoomToExtent</sender>
-   <signal>triggered()</signal>
-   <receiver>sceneWidget</receiver>
-   <slot>zoomToExtent()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>399</x>
-     <y>314</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>actionAbout</sender>
    <signal>triggered()</signal>
    <receiver>MainWindow</receiver>
@@ -279,6 +316,86 @@
     <hint type="destinationlabel">
      <x>399</x>
      <y>299</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionOpenFolder</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>showOpenFileDialog()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>399</x>
+     <y>299</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionRefresh</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>showAboutDialog()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>428</x>
+     <y>295</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionZoomToExtent</sender>
+   <signal>triggered()</signal>
+   <receiver>sceneWidget</receiver>
+   <slot>zoomToExtent()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>240</x>
+     <y>548</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionRead_Meta_Data</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>showAboutDialog()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>403</x>
+     <y>293</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>verticalScrollBar</sender>
+   <signal>sliderMoved(int)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>update()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>523</x>
+     <y>313</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>403</x>
+     <y>293</y>
     </hint>
    </hints>
   </connection>
