@@ -9,7 +9,6 @@
 
 #include "vtkBoundedPlanePointPlacer.h"
 #include "vtkCommand.h"
-#include "vtkDICOMImageReader.h"
 #include "vtkDistanceRepresentation.h"
 #include "vtkDistanceRepresentation2D.h"
 #include "vtkDistanceWidget.h"
@@ -34,10 +33,8 @@
 #include "vtkResliceCursorWidget.h"
 #include "vtkResliceImageViewer.h"
 #include "vtkResliceImageViewerMeasurements.h"
-#include <vtkGenericOpenGLRenderWindow.h>
 #include <vtkRenderWindow.h>
 #include <vtkRenderer.h>
-#include <vtkDICOMReader.h>
 #include <vtkImageActor.h>
 #include <vtkDICOMDirectory.h>
 #include <vtkDICOMItem.h>
@@ -47,7 +44,12 @@
 #include <vtkDICOMApplyRescale.h>
 #include<vtkImageShiftScale.h>
 #include <vtkImageSliceMapper.h>
-
+#include <vtkDICOMMetaData.h>
+#include <vtkDICOMApplyPalette.h>
+#include <vtkCamera.h>
+#include <vtkImageCast.h>
+#include <vtkDICOMReader.h>
+#include <vtkRenderWindowInteractor.h>
 
 //This class is used for syncing four pane 
 class vtkResliceCursorCallback : public vtkCommand
@@ -132,9 +134,9 @@ MainWindow::MainWindow(QWidget* parent): QMainWindow(parent), ui(new Ui::MainWin
 
 MainWindow::~MainWindow() { delete ui; }
 
-void MainWindow::AboutDialog()
+void MainWindow::showAboutDialog()
 {
-    QMessageBox::information(this, "About","Modified By Gan Hui Wen.\nThis is an application for 3D Visualization System");
+    QMessageBox::information(this, "About", "Modified By Gan Hui Wen.\nThis is an application for 3D Visualization System");
 }
 
 void MainWindow::Render()
@@ -146,80 +148,119 @@ void MainWindow::Render()
     ui->view3->renderWindow()->Render();
 }
 
+void MainWindow::reading()
+{
+    vtkImageData* readerImg = nullptr;
+    readerImg = this->reader_data->GetOutput();
+    readerImg->GetDimensions(this->dim);
+
+    if (dim[0] > 2 || dim[1] > 2 || dim[2] > 2)
+    {
+        QString dim0 = QString::number(dim[0]);
+        QString dim1 = QString::number(dim[1]);
+        QString dim2 = QString::number(dim[2]);
+        QString space = " ";
+
+        ui->textBrowser->append("\n");
+
+        ui->textBrowser->append("Dimensions:" + space + dim0 + space + dim1 + space + dim2);
+        QString fileExtensions = this->reader_data->GetFileExtensions();
+        ui->textBrowser->append("fileExtensions: " + fileExtensions);
+
+        QString descriptiveName = this->reader_data->GetDescriptiveName();
+        ui->textBrowser->append("descriptiveName: " + descriptiveName);
+
+        double* pixelSpacing = this->reader_data->GetPixelSpacing();
+        QString pixelS = QString::number(*pixelSpacing, 10, 5);
+        ui->textBrowser->append("pixelSpacing: " + pixelS);
+
+        int width = this->reader_data->GetWidth();
+        QString wid = QString::number(width);
+        ui->textBrowser->append("width: " + wid);
+
+        int height = this->reader_data->GetHeight();
+        QString heig = QString::number(height);
+        ui->textBrowser->append("height: " + heig);
+
+        float* imagePositionPatient = this->reader_data->GetImagePositionPatient();
+        QString imPP = QString::number(*imagePositionPatient, 10, 5);
+        ui->textBrowser->append("imagePositionPatient: " + imPP);
+
+        float* imageOrientationPatient = this->reader_data->GetImageOrientationPatient();
+        QString imOP = QString::number(*imageOrientationPatient, 10, 5);
+        ui->textBrowser->append("imageOrientationPatient: " + imOP);
+
+        int bitsAllocated = this->reader_data->GetBitsAllocated();
+        QString bitsA = QString::number(bitsAllocated);
+        ui->textBrowser->append("bitsAllocated: " + bitsA);
+
+        int pixelRepresentation = this->reader_data->GetPixelRepresentation();
+        QString pixelR = QString::number(pixelRepresentation);
+        ui->textBrowser->append("pixelRepresentation: " + pixelR);
+
+        int numberOfComponents = this->reader_data->GetNumberOfComponents();
+        QString numberO = QString::number(numberOfComponents);
+        ui->textBrowser->append("numberOfComponents: " + numberO);
+
+        QString transferSyntaxUID = this->reader_data->GetTransferSyntaxUID();
+        ui->textBrowser->append("transferSyntaxUID: " + transferSyntaxUID);
+
+        float rescaleSlope = this->reader_data->GetRescaleSlope();
+        QString rescaleS = QString::number(rescaleSlope, 10, 5);
+        ui->textBrowser->append("rescaleSlope: " + rescaleS);
+
+        float rescaleOffset = this->reader_data->GetRescaleOffset();
+        QString rescaleO = QString::number(rescaleOffset, 10, 5);
+        ui->textBrowser->append("rescaleOffset: " + rescaleO);
+
+        QString patientName = this->reader_data->GetPatientName();
+        ui->textBrowser->append("patientName: " + patientName);
+
+        QString studyUID = this->reader_data->GetStudyUID();
+        ui->textBrowser->append("studyUID: " + studyUID);
+
+        QString studyID = this->reader_data->GetStudyID();
+        ui->textBrowser->append("studyID: " + studyID);
+
+        float gantryAngle = this->reader_data->GetGantryAngle();
+        QString gantryA = QString::number(gantryAngle, 10, 5);
+        ui->textBrowser->append("gantryAngle: " + gantryA);
+    }
+}
+
 void MainWindow::OpenDICOM()
 {
     QString folderDICOM = QFileDialog::getExistingDirectory(this, tr("Open DCM Folder"), QDir::currentPath(), QFileDialog::ShowDirsOnly);
-   
+
     QFile file(folderDICOM);
     file.open(QIODevice::ReadOnly);
     if (!file.exists())
         return;
 
+    ui->textBrowser->append("\n");
+    ui->textBrowser->append("Choose File:\n" + folderDICOM);
+    reader_data->SetDirectoryName(folderDICOM.toStdString().c_str());
+    reader_data->Update();
     readDICOM(folderDICOM);
-}
-void MainWindow::refresh()
-{
-    vtkSmartPointer<vtkImageShiftScale> shiftScaleFilter = vtkSmartPointer<vtkImageShiftScale>::New();
-    shiftScaleFilter->SetOutputScalarTypeToUnsignedChar();
-    
-    shiftScaleFilter->SetShift(0);
-    shiftScaleFilter->SetScale(0);
-    shiftScaleFilter->Update();
-
-    // Create actors
-    vtkSmartPointer<vtkImageSliceMapper> originalSliceMapper = vtkSmartPointer<vtkImageSliceMapper>::New();
-
-    vtkSmartPointer<vtkImageSlice> originalSlice = vtkSmartPointer<vtkImageSlice>::New();
-    originalSlice->SetMapper(originalSliceMapper);
-
-    vtkSmartPointer<vtkImageSliceMapper> shiftScaleMapper = vtkSmartPointer<vtkImageSliceMapper>::New();
-    shiftScaleMapper->SetInputConnection(shiftScaleFilter->GetOutputPort());
-
-    vtkSmartPointer<vtkImageSlice> shiftScaleSlice = vtkSmartPointer<vtkImageSlice>::New();
-    shiftScaleSlice->SetMapper(shiftScaleMapper);
-   // shiftScaleSlice->GetProperty()->SetInterpolationTypeToNearest();
-
-    //renderer->AddViewProp(originalSlice);
-
-    vtkSmartPointer<vtkRenderer> shiftScaleRenderer = vtkSmartPointer<vtkRenderer>::New();
-    shiftScaleRenderer->AddViewProp(shiftScaleSlice);
-
-    ui->view1->update();
-    ui->view2->update();
-    ui->view3->update();
-}
-int MainWindow::setValue(int v)
-{
-    if (v > 0)
-    {
-        
-    }
-    return 0;
 }
 
 void MainWindow::readDICOM(const QString& folderDICOM)
 {
-    //vtkSmartPointer<vtkDICOMImageReader> reader = vtkSmartPointer<vtkDICOMImageReader>::New();
-    //reader->SetDirectoryName(folderDICOM.toStdString().c_str());
-    //reader->Update();
-
+    // sort the files into a directory
     vtkSmartPointer < vtkDICOMDirectory > dicomdir = vtkSmartPointer < vtkDICOMDirectory >::New();
     dicomdir->SetDirectoryName(folderDICOM.toStdString().c_str());
     dicomdir->RequirePixelDataOn();
     dicomdir->Update();
     int n = dicomdir->GetNumberOfSeries();
 
-    vtkSmartPointer <vtkDICOMReader> reader =  vtkSmartPointer <vtkDICOMReader>::New();
+    //vtkDICOMreader will read directory above
+    vtkSmartPointer <vtkDICOMReader> reader = vtkSmartPointer <vtkDICOMReader>::New();
+    reader->SetDataExtent(0, 63, 0, 63, 1, 93);
+    reader->SetDataSpacing(3.2, 3.2, 1.5);
+    reader->SetDataOrigin(0.0, 0.0, 0.0);
+    reader->SetDataScalarTypeToUnsignedShort();
+    reader->SetDataByteOrderToLittleEndian();
 
-    // Provide a multi-frame, multi-stack file
-    //reader->SetFileName(folderDICOM.toStdString().c_str());
-    // Read the meta data, get a list of stacks
-   // reader->UpdateInformation();
-    vtkStringArray* stackNames = reader->GetStackIDs();
-    // Specify a stack, here we assume we know the name:
-    reader->SetDesiredStackID("1");
-
-    
     if (n > 0)
     {
         // read the first series found
@@ -232,28 +273,29 @@ void MainWindow::readDICOM(const QString& folderDICOM)
         QMessageBox::information(this, "About", " No DICOM images in directory!");
         return;
     }
-    
+
     reader->SetMemoryRowOrderToFileNative();
+    reader->AutoRescaleOff();
     reader->Update();
     // get the matrix to use when displaying the data
     // (this matrix provides position and orientation)
-   // vtkMatrix4x4* matrix = reader->GetPatientMatrix();
-    
-    vtkNew<vtkDICOMCTRectifier> rectify;
-    rectify->SetVolumeMatrix(reader->GetPatientMatrix());
-    rectify->SetInputConnection(reader->GetOutputPort());
-    rectify->Update();
+    vtkMatrix4x4* matrix = reader->GetPatientMatrix();
+
+    //vtkNew<vtkDICOMCTRectifier> rectify;
+    //rectify->SetVolumeMatrix(reader->GetPatientMatrix());
+    //rectify->SetInputConnection(reader->GetOutputPort());
+    //rectify->Update();
 
     // get the new PatientMatrix for the rectified volume
-    vtkMatrix4x4* matrix = rectify->GetRectifiedMatrix();
+    //vtkMatrix4x4* matrix = rectify->GetRectifiedMatrix();
 
+   // create an image actor to display image and specify orientation
     vtkSmartPointer <vtkImageActor> actor = vtkSmartPointer <vtkImageActor>::New();
     actor->GetMapper();
-         // SetInputConnection(reader->GetOutputPort());
+    actor->GetMapper()->SetInputConnection(reader->GetOutputPort());
     actor->SetUserMatrix(matrix);
 
-
-   // Flip the order of dicom pic to become ascending order
+    // Flip the order of dicom pic to become ascending order
     vtkSmartPointer<vtkImageReslice> flip = vtkSmartPointer<vtkImageReslice>::New();
     //flip->SetInputConnection(reader->GetOutputPort());
     //flip->SetResliceAxesDirectionCosines(-1, 0, 0, 0, -1, 0, 0, 0, -1);
@@ -262,9 +304,32 @@ void MainWindow::readDICOM(const QString& folderDICOM)
     int imageDims[3];
     reader->GetOutput()->GetDimensions(imageDims);
 
+    vtkSmartPointer<vtkImageReslice> reslice = vtkSmartPointer<vtkImageReslice>::New();
+    reslice->SetInputConnection(reader->GetOutputPort());
+    reslice->SetOutputDimensionality(2);
+    reslice->SetOutputExtent(0, 255, 0, 255, 0, 0);
+    reslice->SetOutputSpacing(10, 10, 10);
+    reslice->SetOutputOrigin(-127.5, -127.5, 0.0);
+    reslice->SetInterpolationModeToLinear();
+
+    // Create a greyscale lookup table
+    vtkSmartPointer<vtkLookupTable> table = vtkSmartPointer<vtkLookupTable>::New();
+    //table->SetNumberOfColors(1000);
+    table->SetHueRange(0.0, 0.0);        // image intensity range
+    table->SetValueRange(0.0, 1.0);      // from black to white
+    table->SetSaturationRange(0.0, 0.0); // no color saturation
+    table->SetTableRange(0, 65536);
+    table->SetRampToLinear();
+    table->Build();
+
+    // Map the image through the lookup table
+    vtkSmartPointer<vtkImageMapToColors> color = vtkSmartPointer<vtkImageMapToColors>::New();
+    color->SetLookupTable(table);
+    color->SetInputConnection(reslice->GetOutputPort());
+
     for (int i = 0; i < 3; i++)
     {
-        riw[i] = vtkSmartPointer<vtkResliceImageViewer>::New();        
+        riw[i] = vtkSmartPointer<vtkResliceImageViewer>::New();
         vtkNew<vtkGenericOpenGLRenderWindow> renderWindow;
         riw[i]->SetRenderWindow(renderWindow);
     }
@@ -286,40 +351,65 @@ void MainWindow::readDICOM(const QString& folderDICOM)
         riw[i]->SetResliceCursor(riw[0]->GetResliceCursor());
 
         rep->GetResliceCursorActor()->GetCursorAlgorithm()->SetReslicePlaneNormal(i);
+        rep->SetColorMap(color);
 
+        //riw[i]->SetLookupTable(table);
         riw[i]->SetInputData(reader->GetOutput());
         riw[i]->SetSliceOrientation(i);
         riw[i]->SetResliceModeToAxisAligned();
+        riw[i]->SetColorLevel(150.0);
+        riw[i]->SetColorWindow(1000.0);
+        riw[i]->SetResliceMode(0);
+        riw[i]->GetRenderWindow()->Render();
     }
-   }
+}
+void MainWindow::update()
+{
 
+}
+void MainWindow::refresh()
+{
+    QMessageBox msgBox;
+    msgBox.setText("The document has been modified.");
+    msgBox.exec();
+    for (int i = 0; i < 3; i++)
+    {
+        riw[i]->Reset();
+        riw[i]->GetRenderer()->ResetCamera();
+        riw[i]->Render();
+    }
+    this->Render();
+}
 void MainWindow::OpenVTK()
 {
-    QString fileVTK = QFileDialog::getOpenFileName(this, tr("Open file"), "", "VTK Files (*.vtk)");
-    
-    QFile file(fileVTK);
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Open file"), "",
+        "VTK Files (*.vtk)");
+
+    // Open file
+    QFile file(fileName);
     file.open(QIODevice::ReadOnly);
+
+    // Return on Cancel
     if (!file.exists())
         return;
 
-    readVTK(fileVTK);
+    readVTK(fileName);
 }
 
-void MainWindow::readVTK(const QString& fileVTK)
+void MainWindow::readVTK(const QString& fileName)
 {
     ui->sceneWidget->removeDataSet();
 
     // Create reader
     vtkSmartPointer<vtkDataSetReader> reader = vtkSmartPointer<vtkDataSetReader>::New();
-    reader->SetFileName(fileVTK.toStdString().c_str());
+    reader->SetFileName(fileName.toStdString().c_str());
 
     // Read the file
     reader->Update();
 
     // Add data set to 3D view
     vtkSmartPointer<vtkDataSet> dataSet = reader->GetOutput();
-    if (dataSet != nullptr) 
-    {
+    if (dataSet != nullptr) {
         ui->sceneWidget->addDataSet(reader->GetOutput());
     }
 }
