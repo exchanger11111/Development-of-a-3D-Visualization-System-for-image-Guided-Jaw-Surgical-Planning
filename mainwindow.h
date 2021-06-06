@@ -30,13 +30,18 @@ public slots:
     void OpenDICOM();
     void refresh();
     void reading();
-    void update();
 
+private slots:
+    // define fucntion receive value
+    void horizontal_level(int);
+    void vertical_window(int);
+    
 protected:
    void readDICOM(const QString&);
    void readVTK(const QString&);
    vtkSmartPointer<vtkResliceImageViewer> riw[3];
    vtkSmartPointer<vtkDICOMImageReader> reader_data = vtkSmartPointer<vtkDICOMImageReader>::New();
+   vtkNew<vtkGenericOpenGLRenderWindow> renderWindow;
 
 private:
     Ui::MainWindow* ui;
