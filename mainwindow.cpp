@@ -50,6 +50,9 @@
 #include <vtkImageCast.h>
 #include <vtkDICOMReader.h>
 #include <vtkRenderWindowInteractor.h>
+#include <vtkImageActor.h>
+#include <vtkMatrix4x4.h>
+#include <vtkImageFlip.h>
 
 //This class is used for syncing four pane 
 class vtkResliceCursorCallback : public vtkCommand
@@ -237,10 +240,29 @@ void MainWindow::OpenDICOM()
     if (!file.exists())
         return;
 
+    ui->spinBox->setRange(0, 255);
+    ui->horizontalSlider->setRange(0, 255);
+    //synchronize spinbox and horizontal slider
+    QObject::connect(ui->spinBox, SIGNAL(valueChanged(int)), ui->horizontalSlider,SLOT(setValue(int)));
+    QObject::connect(ui->horizontalSlider, SIGNAL(valueChanged(int)), ui->spinBox, SLOT(setValue(int)));
+    ui->spinBox->setValue(128);// set the initial value
+    //send spinbox value to onSpinValueChanged
+    QObject::connect(ui->spinBox, SIGNAL(valueChanged(int)), this, SLOT(horizontal_level(int)));
+
+    ui->spinBox_2->setRange(0, 2000);
+    ui->verticalSlider->setRange(0, 2000);
+    //synchronize spinbox and horizontal slider
+    QObject::connect(ui->spinBox_2, SIGNAL(valueChanged(int)), ui->verticalSlider, SLOT(setValue(int)));
+    QObject::connect(ui->verticalSlider, SIGNAL(valueChanged(int)), ui->spinBox_2, SLOT(setValue(int)));
+    ui->spinBox_2->setValue(1000);// set the initial value
+    //send spinbox value to onSpinValueChanged
+    QObject::connect(ui->spinBox_2, SIGNAL(valueChanged(int)), this, SLOT(vertical_window(int)));
+
     ui->textBrowser->append("\n");
     ui->textBrowser->append("Choose File:\n" + folderDICOM);
     reader_data->SetDirectoryName(folderDICOM.toStdString().c_str());
     reader_data->Update();
+
     readDICOM(folderDICOM);
 }
 
@@ -270,51 +292,38 @@ void MainWindow::readDICOM(const QString& folderDICOM)
     else
     {
         //std::cerr << "No DICOM images in directory!" << std::endl;
-        QMessageBox::information(this, "About", " No DICOM images in directory!");
+        QMessageBox::information(this, "About", " No DICOM images in this directory!");
         return;
     }
 
     reader->SetMemoryRowOrderToFileNative();
     reader->AutoRescaleOff();
     reader->Update();
+    double bounds[6];
+    reader->GetOutput()->GetBounds(bounds);
     // get the matrix to use when displaying the data
     // (this matrix provides position and orientation)
     vtkMatrix4x4* matrix = reader->GetPatientMatrix();
 
-    //vtkNew<vtkDICOMCTRectifier> rectify;
-    //rectify->SetVolumeMatrix(reader->GetPatientMatrix());
-    //rectify->SetInputConnection(reader->GetOutputPort());
-    //rectify->Update();
-
-    // get the new PatientMatrix for the rectified volume
-    //vtkMatrix4x4* matrix = rectify->GetRectifiedMatrix();
-
    // create an image actor to display image and specify orientation
     vtkSmartPointer <vtkImageActor> actor = vtkSmartPointer <vtkImageActor>::New();
-    actor->GetMapper();
-    actor->GetMapper()->SetInputConnection(reader->GetOutputPort());
     actor->SetUserMatrix(matrix);
-
-    // Flip the order of dicom pic to become ascending order
-    vtkSmartPointer<vtkImageReslice> flip = vtkSmartPointer<vtkImageReslice>::New();
-    //flip->SetInputConnection(reader->GetOutputPort());
-    //flip->SetResliceAxesDirectionCosines(-1, 0, 0, 0, -1, 0, 0, 0, -1);
-    //flip->Update();
+    actor->GetMapper()->SetInputConnection(reader->GetOutputPort());
 
     int imageDims[3];
     reader->GetOutput()->GetDimensions(imageDims);
 
     vtkSmartPointer<vtkImageReslice> reslice = vtkSmartPointer<vtkImageReslice>::New();
     reslice->SetInputConnection(reader->GetOutputPort());
-    reslice->SetOutputDimensionality(2);
-    reslice->SetOutputExtent(0, 255, 0, 255, 0, 0);
-    reslice->SetOutputSpacing(10, 10, 10);
-    reslice->SetOutputOrigin(-127.5, -127.5, 0.0);
-    reslice->SetInterpolationModeToLinear();
+    reslice->SetOutputDimensionality(2);// set the iamge as 2D
+    reslice->SetResliceAxes(matrix);
+    reslice->SetOutputSpacing(reader->GetOutput()->GetSpacing()[0], reader->GetOutput()->GetSpacing()[1], reader->GetOutput()->GetSpacing()[2]);
+    reslice->SetOutputOrigin(reader->GetOutput()->GetOrigin()[0], reader->GetOutput()->GetOrigin()[1], reader->GetOutput()->GetOrigin()[2]);
+    reslice->SetOutputExtent(reader->GetOutput()->GetExtent());
+    reslice->SetInterpolationModeToLinear();//set sampling method
 
     // Create a greyscale lookup table
     vtkSmartPointer<vtkLookupTable> table = vtkSmartPointer<vtkLookupTable>::New();
-    //table->SetNumberOfColors(1000);
     table->SetHueRange(0.0, 0.0);        // image intensity range
     table->SetValueRange(0.0, 1.0);      // from black to white
     table->SetSaturationRange(0.0, 0.0); // no color saturation
@@ -326,7 +335,7 @@ void MainWindow::readDICOM(const QString& folderDICOM)
     vtkSmartPointer<vtkImageMapToColors> color = vtkSmartPointer<vtkImageMapToColors>::New();
     color->SetLookupTable(table);
     color->SetInputConnection(reslice->GetOutputPort());
-
+    vtkSmartPointer<vtkRenderer> renderer = vtkSmartPointer<vtkRenderer>::New();
     for (int i = 0; i < 3; i++)
     {
         riw[i] = vtkSmartPointer<vtkResliceImageViewer>::New();
@@ -353,20 +362,67 @@ void MainWindow::readDICOM(const QString& folderDICOM)
         rep->GetResliceCursorActor()->GetCursorAlgorithm()->SetReslicePlaneNormal(i);
         rep->SetColorMap(color);
 
+        vtkRenderer* renderer;
+        if (this->riw[i] && (renderer = this->riw[i]->GetRenderer()) != NULL)
+        {
+            int axis = this->riw[i]->GetSliceOrientation();
+            double vup[3];
+            renderer->GetActiveCamera()->GetViewUp(vup);
+            double cameraPosition[3];
+            renderer->GetActiveCamera()->GetPosition(cameraPosition);
+            double cameraFocalPoint[3];
+            renderer->GetActiveCamera()->GetPosition(cameraFocalPoint);
+            for (int i = 0; i < 3; ++i)
+            {
+                vup[i] = -vup[i];
+                cameraPosition[i] = 2.0 * cameraFocalPoint[i] - cameraPosition[i];
+            }
+            renderer->GetActiveCamera()->SetPosition(cameraPosition);
+            renderer->GetActiveCamera()->SetViewUp(vup);
+            renderer->ResetCameraClippingRange();
+            this->riw[i]->Render();
+        }
         //riw[i]->SetLookupTable(table);
         riw[i]->SetInputData(reader->GetOutput());
         riw[i]->SetSliceOrientation(i);
         riw[i]->SetResliceModeToAxisAligned();
-        riw[i]->SetColorLevel(150.0);
+        riw[i]->SetColorLevel(150.0);// default color level and window when first print out
         riw[i]->SetColorWindow(1000.0);
         riw[i]->SetResliceMode(0);
         riw[i]->GetRenderWindow()->Render();
     }
 }
-void MainWindow::update()
-{
 
+void MainWindow::horizontal_level(int j)// horizontal slider for color level
+{
+    for (int i = 0; i < 3; i++)
+    {
+        //pixel value for mid-grey brightness level
+        //decreasing color level image brighter
+        riw[i]->SetColorLevel(j);
+    }
+
+    Render();
+    ui->view1->update();
+    ui->view2->update();
+    ui->view3->update();
 }
+
+void MainWindow::vertical_window(int j)//vertical slider for color window
+{
+    for (int i = 0; i < 3; i++)
+    {
+        //range of pixel value for displaying width
+        //decrrasing color window increases brightness interval
+        riw[i]->SetColorWindow(j);
+    }
+
+    Render();
+    ui->view1->update();
+    ui->view2->update();
+    ui->view3->update();
+}
+
 void MainWindow::refresh()
 {
     QMessageBox msgBox;
@@ -380,6 +436,7 @@ void MainWindow::refresh()
     }
     this->Render();
 }
+
 void MainWindow::OpenVTK()
 {
     QString fileName = QFileDialog::getOpenFileName(this, tr("Open file"), "",
