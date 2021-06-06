@@ -21,7 +21,7 @@ SceneWidget::SceneWidget(QWidget* parent)
     // Renderer
     m_renderer = vtkSmartPointer<vtkRenderer>::New();
     m_renderer->SetActiveCamera(camera);
-    m_renderer->SetBackground(0.5, 0.5, 0.5);
+    m_renderer->SetBackground(0.0, 0.0, 0.0);
     renderWindow()->AddRenderer(m_renderer);
 }
 
