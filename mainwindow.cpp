@@ -360,6 +360,7 @@ void MainWindow::readDICOM(const QString& folderDICOM)
         rep->GetResliceCursorActor()->GetCursorAlgorithm()->SetReslicePlaneNormal(i);
         rep->SetColorMap(color);
 
+        // responsible for flipping axial view horizontally
         vtkRenderer* renderer;
         if (this->riw[i] && (renderer = this->riw[i]->GetRenderer()) != NULL)
         {
@@ -380,7 +381,7 @@ void MainWindow::readDICOM(const QString& folderDICOM)
             renderer->ResetCameraClippingRange();
             this->riw[i]->Render();
         }
-        //riw[i]->SetLookupTable(table);
+        
         riw[i]->SetInputData(reader->GetOutput());
         riw[i]->SetSliceOrientation(i);
         riw[i]->SetResliceModeToAxisAligned();
