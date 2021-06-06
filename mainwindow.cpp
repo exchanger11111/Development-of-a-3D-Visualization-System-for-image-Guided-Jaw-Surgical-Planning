@@ -299,8 +299,6 @@ void MainWindow::readDICOM(const QString& folderDICOM)
     reader->SetMemoryRowOrderToFileNative();
     reader->AutoRescaleOff();
     reader->Update();
-    double bounds[6];
-    reader->GetOutput()->GetBounds(bounds);
     // get the matrix to use when displaying the data
     // (this matrix provides position and orientation)
     vtkMatrix4x4* matrix = reader->GetPatientMatrix();
