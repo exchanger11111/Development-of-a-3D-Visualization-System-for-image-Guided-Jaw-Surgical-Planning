@@ -34,7 +34,7 @@
 #include "vtkResliceImageViewer.h"
 #include "vtkResliceImageViewerMeasurements.h"
 #include <vtkRenderWindow.h>
-#include <vtkRenderer.h>
+
 #include <vtkImageActor.h>
 #include <vtkDICOMDirectory.h>
 #include <vtkDICOMItem.h>
@@ -298,7 +298,7 @@ void MainWindow::readDICOM(const QString& folderDICOM)
 
     reader->SetMemoryRowOrderToFileNative();
     reader->AutoRescaleOff();
-    reader->Update();
+    reader->Update();// we need to update the pipeline otherwise nothing will get rendered
     // get the matrix to use when displaying the data
     // (this matrix provides position and orientation)
     vtkMatrix4x4* matrix = reader->GetPatientMatrix();
@@ -307,6 +307,8 @@ void MainWindow::readDICOM(const QString& folderDICOM)
     vtkSmartPointer <vtkImageActor> actor = vtkSmartPointer <vtkImageActor>::New();
     actor->SetUserMatrix(matrix);
     actor->GetMapper()->SetInputConnection(reader->GetOutputPort());
+
+
 
     int imageDims[3];
     reader->GetOutput()->GetDimensions(imageDims);
@@ -333,7 +335,7 @@ void MainWindow::readDICOM(const QString& folderDICOM)
     vtkSmartPointer<vtkImageMapToColors> color = vtkSmartPointer<vtkImageMapToColors>::New();
     color->SetLookupTable(table);
     color->SetInputConnection(reslice->GetOutputPort());
-    vtkSmartPointer<vtkRenderer> renderer = vtkSmartPointer<vtkRenderer>::New();
+
     for (int i = 0; i < 3; i++)
     {
         riw[i] = vtkSmartPointer<vtkResliceImageViewer>::New();
@@ -360,17 +362,18 @@ void MainWindow::readDICOM(const QString& folderDICOM)
         rep->GetResliceCursorActor()->GetCursorAlgorithm()->SetReslicePlaneNormal(i);
         rep->SetColorMap(color);
 
-        // responsible for flipping axial view horizontally
         vtkRenderer* renderer;
-        if (this->riw[i] && (renderer = this->riw[i]->GetRenderer()) != NULL)
+        if (riw[i] && (renderer = riw[i]->GetRenderer()) != NULL)
         {
-            int axis = this->riw[i]->GetSliceOrientation();
+            int axis = riw[i]->GetSliceOrientation();
             double vup[3];
             renderer->GetActiveCamera()->GetViewUp(vup);
+
             double cameraPosition[3];
             renderer->GetActiveCamera()->GetPosition(cameraPosition);
             double cameraFocalPoint[3];
             renderer->GetActiveCamera()->GetPosition(cameraFocalPoint);
+
             for (int i = 0; i < 3; ++i)
             {
                 vup[i] = -vup[i];
@@ -379,13 +382,14 @@ void MainWindow::readDICOM(const QString& folderDICOM)
             renderer->GetActiveCamera()->SetPosition(cameraPosition);
             renderer->GetActiveCamera()->SetViewUp(vup);
             renderer->ResetCameraClippingRange();
-            this->riw[i]->Render();
+            riw[i]->SetRenderer(renderer);
+            riw[i]->Render();
         }
-        
+
         riw[i]->SetInputData(reader->GetOutput());
         riw[i]->SetSliceOrientation(i);
         riw[i]->SetResliceModeToAxisAligned();
-        riw[i]->SetColorLevel(150.0);// default color level and window when first print out
+        riw[i]->SetColorLevel(128.0);// default color level and window when first print out
         riw[i]->SetColorWindow(1000.0);
         riw[i]->SetResliceMode(0);
         riw[i]->GetRenderWindow()->Render();
