@@ -21,7 +21,21 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="2">
+    <item row="2" column="0">
+     <widget class="QSlider" name="horizontalSlider">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="1">
+     <widget class="QSlider" name="verticalSlider">
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="3">
      <widget class="QTextBrowser" name="textBrowser">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
@@ -31,33 +45,10 @@
       </property>
      </widget>
     </item>
-    <item row="0" column="0">
+    <item row="1" column="0">
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
        <layout class="QGridLayout" name="gridLayout_3">
-        <item row="3" column="0">
-         <widget class="SceneWidget" name="sceneWidget"/>
-        </item>
-        <item row="0" column="0">
-         <widget class="QLabel" name="label">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="font">
-           <font>
-            <pointsize>10</pointsize>
-            <weight>75</weight>
-            <bold>true</bold>
-           </font>
-          </property>
-          <property name="text">
-           <string>Sagittal plane</string>
-          </property>
-         </widget>
-        </item>
         <item row="2" column="0">
          <widget class="QLabel" name="label_3">
           <property name="sizePolicy">
@@ -78,8 +69,14 @@
           </property>
          </widget>
         </item>
-        <item row="2" column="2">
-         <widget class="QLabel" name="label_4">
+        <item row="0" column="0">
+         <widget class="QLabel" name="label">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="font">
            <font>
             <pointsize>10</pointsize>
@@ -92,17 +89,31 @@
           </property>
          </widget>
         </item>
-        <item row="3" column="2">
-         <widget class="QVTKRenderWidget" name="view3" native="true"/>
-        </item>
-        <item row="1" column="2">
-         <widget class="QVTKRenderWidget" name="view2" native="true"/>
-        </item>
-        <item row="1" column="0">
-         <widget class="QVTKRenderWidget" name="view1" native="true"/>
-        </item>
         <item row="0" column="2">
          <widget class="QLabel" name="label_2">
+          <property name="font">
+           <font>
+            <pointsize>10</pointsize>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string>Sagittal plane</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="2">
+         <widget class="QVTKRenderWidget" name="view1" native="true"/>
+        </item>
+        <item row="1" column="0">
+         <widget class="QVTKRenderWidget" name="view3" native="true"/>
+        </item>
+        <item row="4" column="2">
+         <widget class="QVTKRenderWidget" name="view2" native="true"/>
+        </item>
+        <item row="2" column="2">
+         <widget class="QLabel" name="label_4">
           <property name="font">
            <font>
             <pointsize>10</pointsize>
@@ -115,16 +126,18 @@
           </property>
          </widget>
         </item>
+        <item row="4" column="0">
+         <widget class="SceneWidget" name="sceneWidget"/>
+        </item>
        </layout>
       </item>
      </layout>
     </item>
-    <item row="0" column="1">
-     <widget class="QScrollBar" name="verticalScrollBar">
-      <property name="orientation">
-       <enum>Qt::Vertical</enum>
-      </property>
-     </widget>
+    <item row="1" column="2">
+     <widget class="QSpinBox" name="spinBox_2"/>
+    </item>
+    <item row="2" column="2">
+     <widget class="QSpinBox" name="spinBox"/>
     </item>
    </layout>
   </widget>
@@ -384,14 +397,62 @@
    </hints>
   </connection>
   <connection>
-   <sender>verticalScrollBar</sender>
-   <signal>sliderMoved(int)</signal>
+   <sender>horizontalSlider</sender>
+   <signal>valueChanged(int)</signal>
    <receiver>MainWindow</receiver>
    <slot>update()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>523</x>
-     <y>313</y>
+     <x>272</x>
+     <y>539</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>403</x>
+     <y>293</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>spinBox</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>update()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>668</x>
+     <y>539</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>403</x>
+     <y>293</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>verticalSlider</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>update()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>475</x>
+     <y>299</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>403</x>
+     <y>293</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>spinBox_2</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>update()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>513</x>
+     <y>298</y>
     </hint>
     <hint type="destinationlabel">
      <x>403</x>
